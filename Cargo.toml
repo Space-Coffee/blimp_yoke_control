@@ -6,3 +6,8 @@ edition = "2021"
 [dependencies]
 sdl2 = "0.37.0"
 tokio = { version = "1.41.1", features = ["full"] }
+blimp_ground_ws_interface = { path = "deps/blimp_ground_ws_interface" }
+tokio-tungstenite = "0.24.0"
+serde = "1.0.215"
+postcard = { version = "1.0.10", features = ["use-std"] }
+futures-util = "0.3.31"
