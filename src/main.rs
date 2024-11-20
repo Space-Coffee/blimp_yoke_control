@@ -11,6 +11,13 @@ enum YokeEvent {
     ButtonState { button: u8, state: bool },
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+enum BlimpSteeringAxis {
+    Throttle,
+    Elevation,
+    Yaw,
+}
+
 fn sdl_thread(
     yoke_tx: tokio::sync::mpsc::Sender<YokeEvent>,
     mut shutdown_rx: tokio::sync::broadcast::Receiver<()>,
@@ -77,6 +84,7 @@ fn sdl_thread(
                 _ => {}
             }
         }
+        std::thread::sleep(std::time::Duration::from_millis(50));
     }
 }
 
@@ -128,12 +136,22 @@ async fn main() -> tokio::io::Result<()> {
         let mut shutdown_rx = shutdown_tx.subscribe();
         //let ws_stream = ws_stream.clone();
         tokio::spawn(async move {
+            let mut axes_mapping =
+                std::collections::BTreeMap::<u8, (BlimpSteeringAxis, i16, i16)>::new();
+            axes_mapping.insert(1, (BlimpSteeringAxis::Throttle, -32768, 32767));
+            axes_mapping.insert(0, (BlimpSteeringAxis::Yaw, -32768, 32767));
+            axes_mapping.insert(4, (BlimpSteeringAxis::Elevation, -32768, 32767));
+            let mut axes_values = std::collections::BTreeMap::<BlimpSteeringAxis, i32>::new();
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
-                        println!("{:?}", yoke_ev);
+                        //println!("{:?}", yoke_ev);
                         match yoke_ev {
-                            Some(YokeEvent::AxisMotion { axis, value }) => {},
+                            Some(YokeEvent::AxisMotion { axis, value }) => {
+                                if let Some(mapped_axis) = axes_mapping.get(&axis){
+                                    axes_values.insert(mapped_axis.0.clone(), (((value as i64)-(mapped_axis.1 as i64) -((mapped_axis.2 as i64)-(mapped_axis.1 as i64))/2) * 0x7FFFFFFF / ((mapped_axis.2 as i64)-(mapped_axis.1 as i64))).try_into().unwrap());
+                                }
+                            },
                             Some(YokeEvent::ButtonState { button, state }) => {},
                             None => {
                                 break;
@@ -142,9 +160,9 @@ async fn main() -> tokio::io::Result<()> {
                         let msg_ser = postcard::to_stdvec::<blimp_ground_ws_interface::MessageV2G>(
                                     &blimp_ground_ws_interface::MessageV2G::Controls(
                                         blimp_ground_ws_interface::Controls {
-                                            throttle: 0,
-                                            pitch: 0,
-                                            roll: 0,
+                                            throttle: *axes_values.get(&BlimpSteeringAxis::Throttle).unwrap_or(&0),
+                                            elevation: *axes_values.get(&BlimpSteeringAxis::Elevation).unwrap_or(&0),
+                                            yaw: *axes_values.get(&BlimpSteeringAxis::Yaw).unwrap_or(&0),
                                         },
                                     ),
                                 ).unwrap();
@@ -176,7 +194,7 @@ async fn main() -> tokio::io::Result<()> {
                     //println!("Received some WS message: {:#?}", ws_msg);
                     if let Some(ws_msg) = ws_msg{
                         if let Ok(ws_msg) = ws_msg{
-                            println!("Got WS G2V message: {:#?}", ws_msg);
+                            //println!("Got WS G2V message: {:#?}", ws_msg);
                             match ws_msg {
                                 tokio_tungstenite::tungstenite::Message::Binary(msg_bin) => {
                                     let msg_des = postcard::from_bytes::<blimp_ground_ws_interface::MessageG2V>(&msg_bin).unwrap();
