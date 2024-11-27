@@ -121,7 +121,7 @@ async fn main() -> tokio::io::Result<()> {
         .send(tokio_tungstenite::tungstenite::Message::Binary(
             postcard::to_stdvec::<blimp_ground_ws_interface::MessageV2G>(
                 &blimp_ground_ws_interface::MessageV2G::DeclareInterest(
-                    blimp_ground_ws_interface::VisInterest {
+                    blimp_ground_ws_interface::VizInterest {
                         motors: true,
                         servos: false,
                     },
@@ -149,7 +149,13 @@ async fn main() -> tokio::io::Result<()> {
                         match yoke_ev {
                             Some(YokeEvent::AxisMotion { axis, value }) => {
                                 if let Some(mapped_axis) = axes_mapping.get(&axis){
-                                    axes_values.insert(mapped_axis.0.clone(), (((value as i64)-(mapped_axis.1 as i64) -((mapped_axis.2 as i64)-(mapped_axis.1 as i64))/2) * 0x7FFFFFFF / ((mapped_axis.2 as i64)-(mapped_axis.1 as i64))).try_into().unwrap());
+                                    axes_values.insert(
+                                        mapped_axis.0.clone(),
+                                        (
+                                            ((value as i64) - ((mapped_axis.1 as i64) + (mapped_axis.2 as i64)) / 2) *
+                                            0xFFFF / ((mapped_axis.2 as i64)-(mapped_axis.1 as i64))
+                                        ).try_into().unwrap()
+                                    );
                                 }
                             },
                             Some(YokeEvent::ButtonState { button, state }) => {},
