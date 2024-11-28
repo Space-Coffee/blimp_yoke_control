@@ -39,9 +39,9 @@ pub async fn ws_client_start(
         tokio::spawn(async move {
             let mut axes_mapping =
                 std::collections::BTreeMap::<u8, (crate::BlimpSteeringAxis, i16, i16)>::new();
-            axes_mapping.insert(1, (crate::BlimpSteeringAxis::Throttle, -32768, 32767));
+            axes_mapping.insert(1, (crate::BlimpSteeringAxis::Throttle, 32767, -32768));
             axes_mapping.insert(0, (crate::BlimpSteeringAxis::Yaw, -32768, 32767));
-            axes_mapping.insert(4, (crate::BlimpSteeringAxis::Elevation, -32768, 32767));
+            axes_mapping.insert(4, (crate::BlimpSteeringAxis::Elevation, 32767, -32768));
             let mut axes_values =
                 std::collections::BTreeMap::<crate::BlimpSteeringAxis, i32>::new();
             loop {
