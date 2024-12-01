@@ -25,6 +25,7 @@ pub async fn ws_client_start(
                     blimp_ground_ws_interface::VizInterest {
                         motors: true,
                         servos: false,
+                        sensors: false,
                     },
                 ),
             )
