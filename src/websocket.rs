@@ -4,14 +4,15 @@ pub async fn ws_client_start(
     shutdown_tx: tokio::sync::broadcast::Sender<()>,
     mut yoke_rx: tokio::sync::mpsc::Receiver<crate::YokeEvent>,
 ) {
+    //TODO: Allow configuring WS address
+    let ws_addr = "ws://127.0.0.1:8765";
+
     let (mut ws_stream, _) = tokio_tungstenite::connect_async(
-        tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(
-            "ws://127.0.0.1:8765",
-        )
-        .unwrap(),
+        tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(ws_addr)
+            .expect(format!("Malformed WebSocket address: {}", ws_addr).as_str()),
     )
     .await
-    .expect("Couldn't open WebSocket");
+    .expect(format!("Couldn't open WebSocket connection with {}", ws_addr).as_str());
     println!("Opened WebSocket connection");
 
     //let ws_stream = std::sync::Arc::new(tokio::sync::Mutex::new(ws_stream));
@@ -38,6 +39,7 @@ pub async fn ws_client_start(
         let mut shutdown_rx = shutdown_tx.subscribe();
         //let ws_stream = ws_stream.clone();
         tokio::spawn(async move {
+            //TODO: Read this configurion from file, for example JSON
             let mut axes_mapping =
                 std::collections::BTreeMap::<u8, (crate::BlimpSteeringAxis, i16, i16)>::new();
             axes_mapping.insert(1, (crate::BlimpSteeringAxis::Throttle, 32767, -32768));

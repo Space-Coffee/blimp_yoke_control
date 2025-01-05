@@ -4,14 +4,20 @@ pub fn sdl_thread(
 ) {
     let mut shutdown_rx = shutdown_tx.subscribe();
 
-    let sdl_ctx = sdl2::init().unwrap();
-    let mut event_pump = sdl_ctx.event_pump().unwrap();
-    let joystick_subsys = sdl_ctx.joystick().unwrap();
-    let joystick = match joystick_subsys.open(0) {
+    let sdl_ctx = sdl2::init().expect("Couldn't initialize SDL2");
+    let mut event_pump = sdl_ctx
+        .event_pump()
+        .expect("Couldn't initialize SDL2 event pump");
+    let joystick_subsys = sdl_ctx
+        .joystick()
+        .expect("Couldn't initialize SDL2 joystick subsystem");
+    // TODO: Allow selecting joystick
+    let joystick_id = 0;
+    let joystick = match joystick_subsys.open(joystick_id) {
         Ok(js) => js,
         Err(err) => {
             shutdown_tx.send(()).unwrap();
-            panic!("Couldn't open joystick");
+            panic!("Couldn't open joystick with id {joystick_id}");
         }
     };
 
