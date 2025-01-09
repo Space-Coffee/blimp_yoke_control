@@ -3,6 +3,7 @@ use futures_util::{SinkExt, StreamExt};
 pub async fn ws_client_start(
     shutdown_tx: tokio::sync::broadcast::Sender<()>,
     mut yoke_rx: tokio::sync::mpsc::Receiver<crate::YokeEvent>,
+    axes_mapping: std::collections::BTreeMap<u8, crate::AxesMappingEntry>,
 ) {
     //TODO: Allow configuring WS address
     let ws_addr = "ws://127.0.0.1:8765";
@@ -39,12 +40,6 @@ pub async fn ws_client_start(
         let mut shutdown_rx = shutdown_tx.subscribe();
         //let ws_stream = ws_stream.clone();
         tokio::spawn(async move {
-            //TODO: Read this configurion from file, for example JSON
-            let mut axes_mapping =
-                std::collections::BTreeMap::<u8, (crate::BlimpSteeringAxis, i16, i16)>::new();
-            axes_mapping.insert(1, (crate::BlimpSteeringAxis::Throttle, 32767, -32768));
-            axes_mapping.insert(0, (crate::BlimpSteeringAxis::Yaw, -32768, 32767));
-            axes_mapping.insert(4, (crate::BlimpSteeringAxis::Elevation, 32767, -32768));
             let mut axes_values =
                 std::collections::BTreeMap::<crate::BlimpSteeringAxis, i32>::new();
             loop {

@@ -3,6 +3,8 @@ mod websocket;
 
 use futures_util::{SinkExt, StreamExt};
 use sdl2;
+use serde;
+use serde_json;
 use tokio;
 use tokio_tungstenite;
 
@@ -14,12 +16,15 @@ enum YokeEvent {
     ButtonState { button: u8, state: bool },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize, serde::Serialize)]
 enum BlimpSteeringAxis {
     Throttle,
     Elevation,
     Yaw,
 }
+
+#[derive(serde::Deserialize, serde::Serialize)]
+struct AxesMappingEntry(BlimpSteeringAxis, i16, i16);
 
 #[tokio::main]
 async fn main() -> tokio::io::Result<()> {
@@ -36,7 +41,26 @@ async fn main() -> tokio::io::Result<()> {
         });
     }
 
-    crate::websocket::ws_client_start(shutdown_tx.clone(), yoke_rx).await;
+    //let mut axes_mapping = std::collections::BTreeMap::<u8, AxesMappingEntry>::new();
+    //axes_mapping.insert(
+    //    1,
+    //    AxesMappingEntry(BlimpSteeringAxis::Throttle, 32767, -32768),
+    //);
+    //axes_mapping.insert(0, AxesMappingEntry(BlimpSteeringAxis::Yaw, -32768, 32767));
+    //axes_mapping.insert(
+    //    4,
+    //    AxesMappingEntry(BlimpSteeringAxis::Elevation, 32767, -32768),
+    //);
+    //println!("{}", serde_json::to_string(&axes_mapping).unwrap());
+
+    let axes_mapping = serde_json::from_str::<std::collections::BTreeMap<u8, AxesMappingEntry>>(
+        &tokio::fs::read_to_string("mapping.json")
+            .await
+            .expect("File mapping.json not found"),
+    )
+    .expect("Invalid JSON file mapping.json");
+
+    crate::websocket::ws_client_start(shutdown_tx.clone(), yoke_rx, axes_mapping).await;
 
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {
