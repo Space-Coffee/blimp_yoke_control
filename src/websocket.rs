@@ -1,9 +1,13 @@
+use std::sync::Arc;
+
 use futures_util::{SinkExt, StreamExt};
+
+use crate::{AxesMapping, BlimpSteeringAxis, YokeEvent};
 
 pub async fn ws_client_start(
     shutdown_tx: tokio::sync::broadcast::Sender<()>,
-    mut yoke_rx: tokio::sync::mpsc::Receiver<crate::YokeEvent>,
-    axes_mapping: std::collections::BTreeMap<u8, crate::AxesMappingEntry>,
+    mut yoke_rx: tokio::sync::mpsc::Receiver<YokeEvent>,
+    axes_mapping: Arc<AxesMapping>,
 ) {
     //TODO: Allow configuring WS address
     let ws_addr = "ws://127.0.0.1:8765";
@@ -40,15 +44,14 @@ pub async fn ws_client_start(
         let mut shutdown_rx = shutdown_tx.subscribe();
         //let ws_stream = ws_stream.clone();
         tokio::spawn(async move {
-            let mut axes_values =
-                std::collections::BTreeMap::<crate::BlimpSteeringAxis, i32>::new();
+            let mut axes_values = std::collections::BTreeMap::<BlimpSteeringAxis, i32>::new();
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
                         //println!("{:?}", yoke_ev);
                         match yoke_ev {
-                            Some(crate::YokeEvent::AxisMotion { axis, value }) => {
-                                if let Some(mapped_axis) = axes_mapping.get(&axis){
+                            Some(crate::YokeEvent::AxisMotion {joy_id, axis, value }) => {
+                                if let Some(mapped_axis) = axes_mapping.joys[joy_id as usize].axes.get(&axis){
                                     axes_values.insert(
                                         mapped_axis.0.clone(),
                                         (
@@ -58,7 +61,7 @@ pub async fn ws_client_start(
                                     );
                                 }
                             },
-                            Some(crate::YokeEvent::ButtonState { button, state }) => {},
+                            Some(crate::YokeEvent::ButtonState { joy_id: _, button: _, state: _ }) => {},
                             None => {
                                 break;
                             }
