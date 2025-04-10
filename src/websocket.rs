@@ -7,7 +7,7 @@ use crate::{AxesMapping, BlimpSteeringAxis, YokeEvent};
 pub async fn ws_client_start(
     shutdown_tx: tokio::sync::broadcast::Sender<()>,
     mut yoke_rx: tokio::sync::mpsc::Receiver<YokeEvent>,
-    axes_mapping: Arc<AxesMapping>,
+    mapping: Arc<AxesMapping>,
 ) {
     //TODO: Allow configuring WS address
     let ws_addr = "ws://127.0.0.1:8765";
@@ -51,7 +51,7 @@ pub async fn ws_client_start(
                         //println!("{:?}", yoke_ev);
                         match yoke_ev {
                             Some(crate::YokeEvent::AxisMotion {joy_id, axis, value }) => {
-                                if let Some(mapped_axis) = axes_mapping.joys[joy_id as usize].axes.get(&axis){
+                                if let Some(mapped_axis) = mapping.joys[joy_id as usize].axes.get(&axis){
                                     axes_values.insert(
                                         mapped_axis.0.clone(),
                                         (
@@ -112,7 +112,7 @@ pub async fn ws_client_start(
                                         let msg_des = postcard::from_bytes::<blimp_ground_ws_interface::MessageG2V>(&msg_bin).unwrap();
                                         match msg_des {
                                             ms @ blimp_ground_ws_interface::MessageG2V::MotorSpeed { id, speed } => {
-                                                println!("Updated speed: {:#?}", ms);
+                                                // println!("Updated speed: {:#?}", ms);
                                             }
                                             _ => {}
                                         }

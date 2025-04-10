@@ -874,9 +874,9 @@ dependencies = [
 ]
 
 [[patch.unused]]
-name = "blimp_onboard_software"
+name = "blimp_comm"
 version = "0.1.0"
 
 [[patch.unused]]
-name = "blimp_comm"
+name = "blimp_onboard_software"
 version = "0.1.0"

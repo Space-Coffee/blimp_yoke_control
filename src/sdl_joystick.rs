@@ -8,7 +8,7 @@ use crate::{AxesMapping, YokeEvent};
 pub fn sdl_thread(
     yoke_tx: tokio::sync::mpsc::Sender<YokeEvent>,
     shutdown_tx: tokio::sync::broadcast::Sender<()>,
-    axes_mapping: Arc<AxesMapping>,
+    mapping: Arc<AxesMapping>,
 ) {
     let mut shutdown_rx = shutdown_tx.subscribe();
 
@@ -23,13 +23,13 @@ pub fn sdl_thread(
     let joys_count = joystick_subsys.num_joysticks().unwrap();
     println!("Joysticks count: {}", joys_count);
     for i in 0..joys_count {
-        println!("{}: {}", i, joystick_subsys.name_for_index(i).unwrap());
+        println!("{}: \"{}\"", i, joystick_subsys.name_for_index(i).unwrap());
     }
 
     // TODO: Allow selecting joystick
     let mut joys_instances = Vec::<sdl2::joystick::Joystick>::new();
     let mut used_joys_ids_mappings = BTreeMap::<u32, u32>::new();
-    for (joy_sym_id, joy) in axes_mapping.joys.iter().enumerate() {
+    for (joy_sym_id, joy) in mapping.joys.iter().enumerate() {
         let name_regex = regex::Regex::new(&joy.name_regex).unwrap();
         let mut joystick_id: Option<u32> = None;
         for i in 0..joys_count {
@@ -55,6 +55,8 @@ pub fn sdl_thread(
             panic!("Matching joystick not found!");
         }
     }
+
+    println!("Joysticks initialized succesfully!");
 
     'ev_loop: loop {
         match shutdown_rx.try_recv() {
