@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use futures_util::{SinkExt, StreamExt};
+use tokio::sync::Mutex as TMutex;
 
 use crate::{AxesMapping, BlimpSteeringAxis, YokeEvent};
 
@@ -30,9 +31,11 @@ pub async fn ws_client_start(
         .await
         .unwrap();
 
+    let ws_client = Arc::new(TMutex::new(ws_client));
+
     {
         let mut shutdown_rx = shutdown_tx.subscribe();
-        //let ws_stream = ws_stream.clone();
+        let ws_client = ws_client.clone();
         tokio::spawn(async move {
             let mut axes_values = std::collections::BTreeMap::<BlimpSteeringAxis, i32>::new();
             loop {
@@ -57,7 +60,7 @@ pub async fn ws_client_start(
                             }
                         }
 
-                        ws_client.send(blimp_ground_ws_interface::MessageV2G::Controls(
+                        ws_client.lock().await.send(blimp_ground_ws_interface::MessageV2G::Controls(
                             blimp_ground_ws_interface::Controls {
                                 throttle: *axes_values.get(&crate::BlimpSteeringAxis::Throttle).unwrap_or(&0),
                                 elevation: *axes_values.get(&crate::BlimpSteeringAxis::Elevation).unwrap_or(&0),
@@ -74,36 +77,37 @@ pub async fn ws_client_start(
         });
     }
 
-    {
-        let shutdown_tx = shutdown_tx.clone();
-        let mut shutdown_rx = shutdown_tx.subscribe();
-        tokio::spawn(async move {
-            loop {
-                //let mut ws_stream_locked = ws_stream.lock().await;
-                tokio::select! {
-                    ws_msg = ws_client.recv() => {
-                        //println!("Received some WS message: {:#?}", ws_msg);
-                        if let Ok(ws_msg) = ws_msg{
-                            //println!("Got WS G2V message: {:#?}", ws_msg);
-                            match ws_msg {
-                                ms @ blimp_ground_ws_interface::MessageG2V::MotorSpeed { id, speed } => {
-                                    // println!("Updated speed: {:#?}", ms);
-                                }
-                                _ => {}
-                            }
-                        }
-                        else {
-                            println!("WebSocket connection closed!");
-                            shutdown_tx.send(()).unwrap();
-                            break;
-                        }
-                    }
-                    _ = shutdown_rx.recv() => {
-                        break;
-                    }
-                };
-                //tokio::task::yield_now().await;
-            }
-        });
-    }
+    // {
+    //     let shutdown_tx = shutdown_tx.clone();
+    //     let mut shutdown_rx = shutdown_tx.subscribe();
+    //     tokio::spawn(async move {
+    //         loop {
+    //             //let mut ws_stream_locked = ws_stream.lock().await;
+    //             let mut ws_client_locked = ws_client.lock().await;
+    //             tokio::select! {
+    //                 ws_msg = ws_client_locked.recv() => {
+    //                     //println!("Received some WS message: {:#?}", ws_msg);
+    //                     if let Ok(ws_msg) = ws_msg{
+    //                         //println!("Got WS G2V message: {:#?}", ws_msg);
+    //                         match ws_msg {
+    //                             blimp_ground_ws_interface::MessageG2V::MotorSpeed { id: _, speed: _ } => {
+    //                                 // println!("Updated speed: {:#?}", ms);
+    //                             }
+    //                             _ => {}
+    //                         }
+    //                     }
+    //                     else {
+    //                         println!("WebSocket connection closed!");
+    //                         shutdown_tx.send(()).unwrap();
+    //                         break;
+    //                     }
+    //                 }
+    //                 _ = shutdown_rx.recv() => {
+    //                     break;
+    //                 }
+    //             };
+    //             //tokio::task::yield_now().await;
+    //         }
+    //     });
+    // }
 }
