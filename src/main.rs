@@ -4,14 +4,9 @@ mod websocket;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use futures_util::{SinkExt, StreamExt};
-use sdl2;
 use serde;
 use serde_json;
 use tokio;
-use tokio_tungstenite;
-
-use blimp_ground_ws_interface;
 
 #[derive(Debug)]
 enum YokeEvent {
@@ -54,7 +49,7 @@ async fn main() -> tokio::io::Result<()> {
 
     let (shutdown_tx, mut shutdown_rx) = tokio::sync::broadcast::channel::<()>(8);
 
-    let (yoke_tx, mut yoke_rx) = tokio::sync::mpsc::channel::<YokeEvent>(128);
+    let (yoke_tx, yoke_rx) = tokio::sync::mpsc::channel::<YokeEvent>(128);
 
     let mapping = Arc::new(
         serde_json::from_str::<AxesMapping>(

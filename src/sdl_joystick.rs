@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use regex;
@@ -45,7 +45,7 @@ pub fn sdl_thread(
         if let Some(joystick_id) = joystick_id {
             let joystick = match joystick_subsys.open(joystick_id) {
                 Ok(js) => js,
-                Err(err) => {
+                Err(_err) => {
                     shutdown_tx.send(()).unwrap();
                     panic!("Couldn't open joystick with id {joystick_id}");
                 }
@@ -72,11 +72,13 @@ pub fn sdl_thread(
                     keycode: Some(sdl2::keyboard::Keycode::Escape),
                     ..
                 } => {
+                    // Pressing escape doesn't seem to be detected, probably because there's no
+                    // window created
                     break 'ev_loop;
                 }
 
                 sdl2::event::Event::JoyAxisMotion {
-                    timestamp,
+                    timestamp: _,
                     which,
                     axis_idx,
                     value,
@@ -92,7 +94,7 @@ pub fn sdl_thread(
                         .unwrap();
                 }
                 sdl2::event::Event::JoyButtonDown {
-                    timestamp,
+                    timestamp: _,
                     which,
                     button_idx,
                 } => {
@@ -107,8 +109,8 @@ pub fn sdl_thread(
                         .unwrap();
                 }
                 sdl2::event::Event::JoyButtonUp {
-                    timestamp,
-                    which,
+                    timestamp: _,
+                    which: _,
                     button_idx,
                 } => {
                     yoke_tx
