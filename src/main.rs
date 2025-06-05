@@ -29,15 +29,19 @@ enum BlimpSteeringAxis {
     Yaw,
 }
 
+// Describes one physical axis mapped to one steering axis.
 #[derive(serde::Deserialize, serde::Serialize)]
 struct AxesMappingEntry(BlimpSteeringAxis, i16, i16);
 
+// This describes one virtual joystick or yoke.
+// Our Turtle Beach yoke is detected as two devices.
 #[derive(serde::Deserialize, serde::Serialize)]
 struct AxesMappingPerJoy {
     pub name_regex: String,
     pub axes: BTreeMap<u8, AxesMappingEntry>,
 }
 
+// This describes an entire physical joystick or yoke.
 #[derive(serde::Deserialize, serde::Serialize)]
 struct AxesMapping {
     pub joys: Vec<AxesMappingPerJoy>,
