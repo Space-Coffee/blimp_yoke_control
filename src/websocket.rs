@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex as TMutex;
 
-use crate::{AxesMapping, BlimpSteeringAxis, YokeEvent};
+use crate::{AxesMapping, BlimpButtonFunction, BlimpSteeringAxis, YokeEvent};
+use blimp_ground_ws_interface::FlightMode;
 
 pub async fn ws_client_start(
     shutdown_tx: tokio::sync::broadcast::Sender<()>,
@@ -37,6 +38,7 @@ pub async fn ws_client_start(
         let ws_client = ws_client.clone();
         tokio::spawn(async move {
             let mut axes_values = std::collections::BTreeMap::<BlimpSteeringAxis, f32>::new();
+            let mut flight_mode = FlightMode::Manual;
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
@@ -56,6 +58,17 @@ pub async fn ws_client_start(
                             },
                             Some(crate::YokeEvent::ButtonState { joy_id, button, state }) => {
                                 if let Some(mapped_button) = mapping.joys[joy_id as usize].buttons.get(&button) {
+                                    match mapped_button.function {
+                                        BlimpButtonFunction::FlightModeCycle => {
+                                            if state {
+                                                flight_mode = match flight_mode.clone() {
+                                                    FlightMode::Manual => FlightMode::Atti,
+                                                    FlightMode::Atti => FlightMode::AltiAtti,
+                                                    FlightMode::AltiAtti => FlightMode::Manual,
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             },
                             None => {
@@ -81,7 +94,7 @@ pub async fn ws_client_start(
                                     sideways: 0.0,
                                     pitch: 0.0,
                                     roll: 0.0,
-                                    desired_flight_mode: blimp_ground_ws_interface::FlightMode::Manual,
+                                    desired_flight_mode: flight_mode.clone(),
                                 },
                             ))
                             .await
