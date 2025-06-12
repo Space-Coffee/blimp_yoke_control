@@ -36,7 +36,7 @@ pub async fn ws_client_start(
         let mut shutdown_rx = shutdown_tx.subscribe();
         let ws_client = ws_client.clone();
         tokio::spawn(async move {
-            let mut axes_values = std::collections::BTreeMap::<BlimpSteeringAxis, i32>::new();
+            let mut axes_values = std::collections::BTreeMap::<BlimpSteeringAxis, f32>::new();
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
@@ -46,10 +46,11 @@ pub async fn ws_client_start(
                                 if let Some(mapped_axis) = mapping.joys[joy_id as usize].axes.get(&axis) {
                                     axes_values.insert(
                                         mapped_axis.0.clone(),
-                                        (
-                                            ((value as i64) - ((mapped_axis.1 as i64) + (mapped_axis.2 as i64)) / 2) *
-                                            0xFFFF / ((mapped_axis.2 as i64)-(mapped_axis.1 as i64))
-                                        ).try_into().unwrap()
+                                        ((value as f32 - (mapped_axis.1 as f32 + mapped_axis.2 as f32) / 2.0)
+                                            * 2.0
+                                            / (mapped_axis.2 as f32 - mapped_axis.1 as f32))
+                                            .try_into()
+                                            .unwrap(),
                                     );
                                 }
                             },
@@ -62,13 +63,29 @@ pub async fn ws_client_start(
                             }
                         }
 
-                        ws_client.lock().await.send(blimp_ground_ws_interface::MessageV2G::Controls(
-                            blimp_ground_ws_interface::Controls {
-                                throttle: *axes_values.get(&crate::BlimpSteeringAxis::Throttle).unwrap_or(&0),
-                                elevation: *axes_values.get(&crate::BlimpSteeringAxis::Elevation).unwrap_or(&0),
-                                yaw: *axes_values.get(&crate::BlimpSteeringAxis::Yaw).unwrap_or(&0),
-                            },
-                        )).await.unwrap();
+                        ws_client
+                            .lock()
+                            .await
+                            .send(blimp_ground_ws_interface::MessageV2G::Controls(
+                                blimp_ground_ws_interface::Controls {
+                                    throttle_main: *axes_values
+                                        .get(&crate::BlimpSteeringAxis::Throttle)
+                                        .unwrap_or(&0.0),
+                                    elevation: *axes_values
+                                        .get(&crate::BlimpSteeringAxis::Elevation)
+                                        .unwrap_or(&0.0),
+                                    yaw: *axes_values
+                                        .get(&crate::BlimpSteeringAxis::Yaw)
+                                        .unwrap_or(&0.0),
+                                    throttle_split: [0.0; 4],
+                                    sideways: 0.0,
+                                    pitch: 0.0,
+                                    roll: 0.0,
+                                    desired_flight_mode: blimp_ground_ws_interface::FlightMode::Manual,
+                                },
+                            ))
+                            .await
+                            .unwrap();
                     }
                     _ = shutdown_rx.recv() => {
                         break;
