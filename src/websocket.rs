@@ -43,7 +43,7 @@ pub async fn ws_client_start(
                         //println!("{:?}", yoke_ev);
                         match yoke_ev {
                             Some(crate::YokeEvent::AxisMotion {joy_id, axis, value }) => {
-                                if let Some(mapped_axis) = mapping.joys[joy_id as usize].axes.get(&axis){
+                                if let Some(mapped_axis) = mapping.joys[joy_id as usize].axes.get(&axis) {
                                     axes_values.insert(
                                         mapped_axis.0.clone(),
                                         (
@@ -53,7 +53,10 @@ pub async fn ws_client_start(
                                     );
                                 }
                             },
-                            Some(crate::YokeEvent::ButtonState { joy_id: _, button: _, state: _ }) => {},
+                            Some(crate::YokeEvent::ButtonState { joy_id, button, state }) => {
+                                if let Some(mapped_button) = mapping.joys[joy_id as usize].buttons.get(&button) {
+                                }
+                            },
                             None => {
                                 break;
                             }

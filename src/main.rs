@@ -33,12 +33,32 @@ enum BlimpSteeringAxis {
 #[derive(serde::Deserialize, serde::Serialize)]
 struct AxesMappingEntry(BlimpSteeringAxis, i16, i16);
 
+#[derive(serde::Deserialize, serde::Serialize)]
+enum ButtonStyle {
+    OnlyPress,
+    OnlyRelease,
+    PressAndRelease,
+    Repeat(f32),
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+enum BlimpButtonFunction {
+    FlightModeCycle,
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+struct ButtonMappingEntry {
+    function: BlimpButtonFunction,
+    style: ButtonStyle,
+}
+
 // This describes one virtual joystick or yoke.
 // Our Turtle Beach yoke is detected as two devices.
 #[derive(serde::Deserialize, serde::Serialize)]
 struct AxesMappingPerJoy {
     pub name_regex: String,
     pub axes: BTreeMap<u8, AxesMappingEntry>,
+    pub buttons: BTreeMap<u8, ButtonMappingEntry>,
 }
 
 // This describes an entire physical joystick or yoke.

@@ -26,7 +26,6 @@ pub fn sdl_thread(
         println!("{}: \"{}\"", i, joystick_subsys.name_for_index(i).unwrap());
     }
 
-    // TODO: Allow selecting joystick
     let mut joys_instances = Vec::<sdl2::joystick::Joystick>::new();
     let mut used_joys_ids_mappings = BTreeMap::<u32, u32>::new();
     for (joy_sym_id, joy) in mapping.joys.iter().enumerate() {
@@ -107,19 +106,23 @@ pub fn sdl_thread(
                             state: true,
                         })
                         .unwrap();
+                    // println!("Button {} down", button_idx);
                 }
                 sdl2::event::Event::JoyButtonUp {
                     timestamp: _,
-                    which: _,
+                    which,
                     button_idx,
                 } => {
                     yoke_tx
                         .blocking_send(YokeEvent::ButtonState {
-                            joy_id: 0,
+                            joy_id: *used_joys_ids_mappings
+                                .get(&which)
+                                .expect("Received event from unknown joystick"),
                             button: button_idx,
                             state: false,
                         })
                         .unwrap();
+                    // println!("Button {} up", button_idx);
                 }
                 _ => {}
             }
