@@ -26,6 +26,7 @@ pub async fn ws_client_start(
                 motors: true,
                 servos: false,
                 sensors: false,
+                state: false,
             },
         ))
         .await
