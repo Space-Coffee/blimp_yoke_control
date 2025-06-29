@@ -6,6 +6,12 @@
 				"0": ["Yaw", -32768, 32767],
 				"1": ["Throttle", 32767, -32768],
 				"4": ["Elevation", 32767, -32768]
+			},
+			"buttons": {
+				"0": {
+					"function": "FlightModeCycle",
+					"style": "PressAndRelease"
+				}
 			}
 		}
 	]
