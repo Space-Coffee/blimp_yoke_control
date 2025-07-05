@@ -1,17 +1,53 @@
 {
-	"joys": [
-		{
-			"name_regex": "Turtle Beach VelocityOne Flight",
-			"axes": {
-				"0": ["Yaw", -32768, 32767],
-				"1": ["Elevation", 32767, -32768]
-			}
-		},
-		{
-			"name_regex": "Turtle Beach VelocityOne Flight",
-			"axes": {
-				"0": ["Throttle", -32768, 32767]
-			}
-		}
-	]
+  "joys": [
+    {
+      "name_regex": "Turtle Beach VelocityOne Flight",
+      "axes": {
+        "0": {
+          "axis": "Yaw",
+          "keypoints": [
+            [
+              -32768,
+              -1.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        },
+        "1": {
+          "axis": "Elevation",
+          "keypoints": [
+            [
+              -32768,
+              1.0
+            ],
+            [
+              32767,
+              -1.0
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name_regex": "Turtle Beach VelocityOne Flight",
+      "axes": {
+        "0": {
+          "axis": "Throttle",
+          "keypoints": [
+            [
+              -32768,
+              -1.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        }
+      }
+    }
+  ]
 }
