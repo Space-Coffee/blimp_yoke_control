@@ -1,18 +1,54 @@
 {
-	"joys": [
-		{
-			"name_regex": "",
-			"axes": {
-				"0": ["Yaw", -32768, 32767],
-				"1": ["Throttle", 32767, -32768],
-				"4": ["Elevation", 32767, -32768]
-			},
-			"buttons": {
-				"0": {
-					"function": "FlightModeCycle",
-					"style": "PressAndRelease"
-				}
-			}
-		}
-	]
+  "joys": [
+    {
+      "name_regex": "",
+      "axes": {
+        "0": {
+          "axis": "Yaw",
+          "keypoints": [
+            [
+              -32768,
+              -1.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        },
+        "1": {
+          "axis": "Throttle",
+          "keypoints": [
+            [
+              -32768,
+              1.0
+            ],
+            [
+              32767,
+              -1.0
+            ]
+          ]
+        },
+        "4": {
+          "axis": "Elevation",
+          "keyframes": [
+            [
+              -32768,
+              1.0
+            ],
+            [
+              32767,
+              -1.0
+            ]
+          ]
+        }
+      },
+      "buttons": {
+        "0": {
+          "function": "FlightModeCycle",
+          "style": "PressAndRelease"
+        }
+      }
+    }
+  ]
 }
