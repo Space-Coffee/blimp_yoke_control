@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use serde;
 use serde_json;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize, serde::Serialize)]
@@ -11,7 +12,10 @@ pub enum BlimpSteeringAxis {
 
 // Describes one physical axis mapped to one steering axis.
 #[derive(serde::Deserialize, serde::Serialize)]
-pub struct AxesMappingEntry(pub BlimpSteeringAxis, pub i16, pub i16);
+pub struct AxesMappingEntry {
+    pub axis: BlimpSteeringAxis,
+    pub keypoints: Vec<(i16, f32)>,
+}
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub enum ButtonStyle {

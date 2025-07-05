@@ -50,13 +50,21 @@ pub async fn ws_client_start(
                         match yoke_ev {
                             Some(YokeEvent::AxisMotion {joy_id, axis, value }) => {
                                 if let Some(mapped_axis) = config.joys[joy_id as usize].axes.get(&axis) {
+                                    let mut keypoint_num = 0;
+                                    while keypoint_num < mapped_axis.keypoints.len() {
+                                        if mapped_axis.keypoints[keypoint_num + 1].0 >= value {
+                                            break;
+                                        }
+                                        keypoint_num += 1;
+                                    }
+                                    // Invariant here: mapped_axis.keypoints[keypoint_num].0 <=
+                                    // value <= mapped_axis.keypoints[keypoint_num + 1].0
                                     axes_values.insert(
-                                        mapped_axis.0.clone(),
-                                        ((value as f32 - (mapped_axis.1 as f32 + mapped_axis.2 as f32) / 2.0)
-                                            * 2.0
-                                            / (mapped_axis.2 as f32 - mapped_axis.1 as f32))
-                                            .try_into()
-                                            .unwrap(),
+                                        mapped_axis.axis.clone(),
+                                        (value as f32 - mapped_axis.keypoints[keypoint_num].0 as f32)
+                                            / (mapped_axis.keypoints[keypoint_num + 1].0 as f32 - mapped_axis.keypoints[keypoint_num].0 as f32)
+                                            * (mapped_axis.keypoints[keypoint_num + 1].1 - mapped_axis.keypoints[keypoint_num].1)
+                                            + mapped_axis.keypoints[keypoint_num].1
                                     );
                                 }
                             },

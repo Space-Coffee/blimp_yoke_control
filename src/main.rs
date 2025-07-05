@@ -36,11 +36,11 @@ async fn main() -> tokio::io::Result<()> {
         let shutdown_tx = shutdown_tx.clone();
         let config = config.clone();
         std::thread::spawn(move || {
-            crate::sdl_joystick::sdl_thread(yoke_tx, shutdown_tx, config);
+            sdl_joystick::sdl_thread(yoke_tx, shutdown_tx, config);
         });
     }
 
-    crate::websocket::ws_client_start(shutdown_tx.clone(), yoke_rx, config).await;
+    websocket::ws_client_start(shutdown_tx.clone(), yoke_rx, config).await;
 
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {
