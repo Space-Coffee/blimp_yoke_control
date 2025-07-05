@@ -48,6 +48,7 @@ pub struct AxesMappingPerJoy {
 // This describes an entire physical joystick or yoke.
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct ConfigFile {
+    pub ws_addr: String,
     pub joys: Vec<AxesMappingPerJoy>,
 }
 
