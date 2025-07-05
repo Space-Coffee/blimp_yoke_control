@@ -53,7 +53,7 @@ pub struct ConfigFile {
 
 pub async fn read_config() -> Result<ConfigFile, String> {
     serde_json::from_str::<ConfigFile>(
-        &tokio::fs::read_to_string("mapping.json")
+        &tokio::fs::read_to_string("config.json")
             .await
             .map_err(|err| err.to_string())?,
     )
