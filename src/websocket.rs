@@ -2,13 +2,16 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex as TMutex;
 
-use crate::{AxesMapping, BlimpButtonFunction, BlimpSteeringAxis, YokeEvent};
+use crate::{
+    config_file::{BlimpButtonFunction, BlimpSteeringAxis, ConfigFile},
+    YokeEvent,
+};
 use blimp_ground_ws_interface::FlightMode;
 
 pub async fn ws_client_start(
     shutdown_tx: tokio::sync::broadcast::Sender<()>,
     mut yoke_rx: tokio::sync::mpsc::Receiver<YokeEvent>,
-    mapping: Arc<AxesMapping>,
+    config: Arc<ConfigFile>,
 ) {
     //TODO: Allow configuring WS address
     let ws_addr = "ws://127.0.0.1:8765";
@@ -45,8 +48,8 @@ pub async fn ws_client_start(
                     yoke_ev = yoke_rx.recv() => {
                         //println!("{:?}", yoke_ev);
                         match yoke_ev {
-                            Some(crate::YokeEvent::AxisMotion {joy_id, axis, value }) => {
-                                if let Some(mapped_axis) = mapping.joys[joy_id as usize].axes.get(&axis) {
+                            Some(YokeEvent::AxisMotion {joy_id, axis, value }) => {
+                                if let Some(mapped_axis) = config.joys[joy_id as usize].axes.get(&axis) {
                                     axes_values.insert(
                                         mapped_axis.0.clone(),
                                         ((value as f32 - (mapped_axis.1 as f32 + mapped_axis.2 as f32) / 2.0)
@@ -57,8 +60,8 @@ pub async fn ws_client_start(
                                     );
                                 }
                             },
-                            Some(crate::YokeEvent::ButtonState { joy_id, button, state }) => {
-                                if let Some(mapped_button) = mapping.joys[joy_id as usize].buttons.get(&button) {
+                            Some(YokeEvent::ButtonState { joy_id, button, state }) => {
+                                if let Some(mapped_button) = config.joys[joy_id as usize].buttons.get(&button) {
                                     match mapped_button.function {
                                         BlimpButtonFunction::FlightModeCycle => {
                                             if state {
@@ -83,13 +86,13 @@ pub async fn ws_client_start(
                             .send(blimp_ground_ws_interface::MessageV2G::Controls(
                                 blimp_ground_ws_interface::Controls {
                                     throttle_main: *axes_values
-                                        .get(&crate::BlimpSteeringAxis::Throttle)
+                                        .get(&BlimpSteeringAxis::Throttle)
                                         .unwrap_or(&0.0),
                                     elevation: *axes_values
-                                        .get(&crate::BlimpSteeringAxis::Elevation)
+                                        .get(&BlimpSteeringAxis::Elevation)
                                         .unwrap_or(&0.0),
                                     yaw: *axes_values
-                                        .get(&crate::BlimpSteeringAxis::Yaw)
+                                        .get(&BlimpSteeringAxis::Yaw)
                                         .unwrap_or(&0.0),
                                     throttle_split: [0.0; 4],
                                     sideways: 0.0,

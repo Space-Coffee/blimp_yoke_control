@@ -3,12 +3,12 @@ use std::sync::Arc;
 
 use regex;
 
-use crate::{AxesMapping, YokeEvent};
+use crate::{ConfigFile, YokeEvent};
 
 pub fn sdl_thread(
     yoke_tx: tokio::sync::mpsc::Sender<YokeEvent>,
     shutdown_tx: tokio::sync::broadcast::Sender<()>,
-    mapping: Arc<AxesMapping>,
+    config: Arc<ConfigFile>,
 ) {
     let mut shutdown_rx = shutdown_tx.subscribe();
 
@@ -28,7 +28,7 @@ pub fn sdl_thread(
 
     let mut joys_instances = Vec::<sdl2::joystick::Joystick>::new();
     let mut used_joys_ids_mappings = BTreeMap::<u32, u32>::new();
-    for (joy_sym_id, joy) in mapping.joys.iter().enumerate() {
+    for (joy_sym_id, joy) in config.joys.iter().enumerate() {
         let name_regex = regex::Regex::new(&joy.name_regex).unwrap();
         let mut joystick_id: Option<u32> = None;
         for i in 0..joys_count {
