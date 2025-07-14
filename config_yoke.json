@@ -66,7 +66,31 @@
           ]
         }
       },
-      "buttons": {}
+      "buttons": {
+        "0": {
+          "function": "FlightModeCycle"
+        },
+        "2": {
+          "function": {
+            "MotorToggle": 0
+          }
+        },
+        "3": {
+          "function": {
+            "MotorToggle": 1
+          }
+        },
+        "4": {
+          "function": {
+            "MotorToggle": 2
+          }
+        },
+        "5": {
+          "function": {
+            "MotorToggle": 3
+          }
+        }
+      }
     }
   ]
 }

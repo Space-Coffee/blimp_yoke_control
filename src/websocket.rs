@@ -43,6 +43,7 @@ pub async fn ws_client_start(
         tokio::spawn(async move {
             let mut axes_values = BTreeMap::<BlimpSteeringAxis, f32>::new();
             let mut flight_mode = FlightMode::Manual;
+            let mut motors_toggles = [true; 4];
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
@@ -80,6 +81,11 @@ pub async fn ws_client_start(
                                                 }
                                             }
                                         }
+                                        BlimpButtonFunction::MotorToggle(motor) => {
+                                            if state {
+                                                motors_toggles[motor as usize] = !motors_toggles[motor as usize];
+                                            }
+                                        }
                                     }
                                 }
                             },
@@ -107,6 +113,7 @@ pub async fn ws_client_start(
                                     pitch: 0.0,
                                     roll: 0.0,
                                     desired_flight_mode: flight_mode.clone(),
+                                    motors_toggles: motors_toggles.clone(),
                                 },
                             ))
                             .await

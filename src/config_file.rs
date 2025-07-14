@@ -18,22 +18,14 @@ pub struct AxesMappingEntry {
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
-pub enum ButtonStyle {
-    OnlyPress,
-    OnlyRelease,
-    PressAndRelease,
-    Repeat(f32),
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
 pub enum BlimpButtonFunction {
     FlightModeCycle,
+    MotorToggle(i16),
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct ButtonMappingEntry {
     pub function: BlimpButtonFunction,
-    pub style: ButtonStyle,
 }
 
 // This describes one virtual joystick or yoke.
