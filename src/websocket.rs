@@ -1,19 +1,24 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use tokio::sync::Mutex as TMutex;
+use tokio::sync::{broadcast, mpsc, Mutex as TMutex};
 
-use crate::{AxesMapping, BlimpButtonFunction, BlimpSteeringAxis, YokeEvent};
-use blimp_ground_ws_interface::FlightMode;
+use crate::{
+    config_file::{BlimpButtonFunction, BlimpSteeringAxis, ConfigFile},
+    YokeEvent,
+};
+use blimp_ground_ws_interface::{
+    BlimpGroundWebsocketClient, Controls, FlightMode, MessageV2G, VizInterest,
+};
 
 pub async fn ws_client_start(
-    shutdown_tx: tokio::sync::broadcast::Sender<()>,
-    mut yoke_rx: tokio::sync::mpsc::Receiver<YokeEvent>,
-    mapping: Arc<AxesMapping>,
+    shutdown_tx: broadcast::Sender<()>,
+    mut yoke_rx: mpsc::Receiver<YokeEvent>,
+    config: Arc<ConfigFile>,
 ) {
-    //TODO: Allow configuring WS address
-    let ws_addr = "ws://127.0.0.1:8765";
+    let ws_addr = &config.ws_addr;
 
-    let mut ws_client = blimp_ground_ws_interface::BlimpGroundWebsocketClient::new(ws_addr);
+    let mut ws_client = BlimpGroundWebsocketClient::new(ws_addr);
     ws_client
         .connect()
         .await
@@ -21,14 +26,12 @@ pub async fn ws_client_start(
     println!("Opened WebSocket connection");
 
     ws_client
-        .send(blimp_ground_ws_interface::MessageV2G::DeclareInterest(
-            blimp_ground_ws_interface::VizInterest {
-                motors: true,
-                servos: false,
-                sensors: false,
-                state: false,
-            },
-        ))
+        .send(MessageV2G::DeclareInterest(VizInterest {
+            motors: true,
+            servos: false,
+            sensors: false,
+            state: false,
+        }))
         .await
         .unwrap();
 
@@ -38,27 +41,35 @@ pub async fn ws_client_start(
         let mut shutdown_rx = shutdown_tx.subscribe();
         let ws_client = ws_client.clone();
         tokio::spawn(async move {
-            let mut axes_values = std::collections::BTreeMap::<BlimpSteeringAxis, f32>::new();
+            let mut axes_values = BTreeMap::<BlimpSteeringAxis, f32>::new();
             let mut flight_mode = FlightMode::Manual;
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
                         //println!("{:?}", yoke_ev);
                         match yoke_ev {
-                            Some(crate::YokeEvent::AxisMotion {joy_id, axis, value }) => {
-                                if let Some(mapped_axis) = mapping.joys[joy_id as usize].axes.get(&axis) {
+                            Some(YokeEvent::AxisMotion {joy_id, axis, value }) => {
+                                if let Some(mapped_axis) = config.joys[joy_id as usize].axes.get(&axis) {
+                                    let mut keypoint_num = 0;
+                                    while keypoint_num < mapped_axis.keypoints.len() {
+                                        if mapped_axis.keypoints[keypoint_num + 1].0 >= value {
+                                            break;
+                                        }
+                                        keypoint_num += 1;
+                                    }
+                                    // Invariant here: mapped_axis.keypoints[keypoint_num].0 <=
+                                    // value <= mapped_axis.keypoints[keypoint_num + 1].0
                                     axes_values.insert(
-                                        mapped_axis.0.clone(),
-                                        ((value as f32 - (mapped_axis.1 as f32 + mapped_axis.2 as f32) / 2.0)
-                                            * 2.0
-                                            / (mapped_axis.2 as f32 - mapped_axis.1 as f32))
-                                            .try_into()
-                                            .unwrap(),
+                                        mapped_axis.axis.clone(),
+                                        (value as f32 - mapped_axis.keypoints[keypoint_num].0 as f32)
+                                            / (mapped_axis.keypoints[keypoint_num + 1].0 as f32 - mapped_axis.keypoints[keypoint_num].0 as f32)
+                                            * (mapped_axis.keypoints[keypoint_num + 1].1 - mapped_axis.keypoints[keypoint_num].1)
+                                            + mapped_axis.keypoints[keypoint_num].1
                                     );
                                 }
                             },
-                            Some(crate::YokeEvent::ButtonState { joy_id, button, state }) => {
-                                if let Some(mapped_button) = mapping.joys[joy_id as usize].buttons.get(&button) {
+                            Some(YokeEvent::ButtonState { joy_id, button, state }) => {
+                                if let Some(mapped_button) = config.joys[joy_id as usize].buttons.get(&button) {
                                     match mapped_button.function {
                                         BlimpButtonFunction::FlightModeCycle => {
                                             if state {
@@ -80,16 +91,16 @@ pub async fn ws_client_start(
                         ws_client
                             .lock()
                             .await
-                            .send(blimp_ground_ws_interface::MessageV2G::Controls(
-                                blimp_ground_ws_interface::Controls {
+                            .send(MessageV2G::Controls(
+                                Controls {
                                     throttle_main: *axes_values
-                                        .get(&crate::BlimpSteeringAxis::Throttle)
+                                        .get(&BlimpSteeringAxis::Throttle)
                                         .unwrap_or(&0.0),
                                     elevation: *axes_values
-                                        .get(&crate::BlimpSteeringAxis::Elevation)
+                                        .get(&BlimpSteeringAxis::Elevation)
                                         .unwrap_or(&0.0),
                                     yaw: *axes_values
-                                        .get(&crate::BlimpSteeringAxis::Yaw)
+                                        .get(&BlimpSteeringAxis::Yaw)
                                         .unwrap_or(&0.0),
                                     throttle_split: [0.0; 4],
                                     sideways: 0.0,

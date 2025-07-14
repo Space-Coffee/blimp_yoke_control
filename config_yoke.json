@@ -1,0 +1,72 @@
+{
+  "ws_addr": "ws://127.0.0.1:8765",
+  "joys": [
+    {
+      "name_regex": "Turtle Beach VelocityOne Flight",
+      "axes": {
+        "0": {
+          "axis": "Yaw",
+          "keypoints": [
+            [
+              -32768,
+              -1.0
+            ],
+            [
+              -480,
+              0.0
+            ],
+            [
+              480,
+              0.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        },
+        "1": {
+          "axis": "Elevation",
+          "keypoints": [
+            [
+              -32768,
+              1.0
+            ],
+            [
+              -480,
+              0.0
+            ],
+            [
+              480,
+              0.0
+            ],
+            [
+              32767,
+              -1.0
+            ]
+          ]
+        }
+      },
+      "buttons": {}
+    },
+    {
+      "name_regex": "Turtle Beach VelocityOne Flight",
+      "axes": {
+        "0": {
+          "axis": "Throttle",
+          "keypoints": [
+            [
+              -32768,
+              -1.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        }
+      },
+      "buttons": {}
+    }
+  ]
+}

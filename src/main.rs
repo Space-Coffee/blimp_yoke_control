@@ -1,12 +1,12 @@
+mod config_file;
 mod sdl_joystick;
 mod websocket;
 
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use serde;
-use serde_json;
 use tokio;
+
+use crate::config_file::{read_config, ConfigFile};
 
 #[derive(Debug)]
 enum YokeEvent {
@@ -22,51 +22,6 @@ enum YokeEvent {
     },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize, serde::Serialize)]
-enum BlimpSteeringAxis {
-    Throttle,
-    Elevation,
-    Yaw,
-}
-
-// Describes one physical axis mapped to one steering axis.
-#[derive(serde::Deserialize, serde::Serialize)]
-struct AxesMappingEntry(BlimpSteeringAxis, i16, i16);
-
-#[derive(serde::Deserialize, serde::Serialize)]
-enum ButtonStyle {
-    OnlyPress,
-    OnlyRelease,
-    PressAndRelease,
-    Repeat(f32),
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-enum BlimpButtonFunction {
-    FlightModeCycle,
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
-struct ButtonMappingEntry {
-    function: BlimpButtonFunction,
-    style: ButtonStyle,
-}
-
-// This describes one virtual joystick or yoke.
-// Our Turtle Beach yoke is detected as two devices.
-#[derive(serde::Deserialize, serde::Serialize)]
-struct AxesMappingPerJoy {
-    pub name_regex: String,
-    pub axes: BTreeMap<u8, AxesMappingEntry>,
-    pub buttons: BTreeMap<u8, ButtonMappingEntry>,
-}
-
-// This describes an entire physical joystick or yoke.
-#[derive(serde::Deserialize, serde::Serialize)]
-struct AxesMapping {
-    pub joys: Vec<AxesMappingPerJoy>,
-}
-
 #[tokio::main]
 async fn main() -> tokio::io::Result<()> {
     println!("Hello, world!");
@@ -75,24 +30,17 @@ async fn main() -> tokio::io::Result<()> {
 
     let (yoke_tx, yoke_rx) = tokio::sync::mpsc::channel::<YokeEvent>(128);
 
-    let mapping = Arc::new(
-        serde_json::from_str::<AxesMapping>(
-            &tokio::fs::read_to_string("mapping.json")
-                .await
-                .expect("File mapping.json not found"),
-        )
-        .expect("Invalid JSON file mapping.json"),
-    );
+    let config = Arc::new(read_config().await.unwrap());
 
     {
         let shutdown_tx = shutdown_tx.clone();
-        let mapping = mapping.clone();
+        let config = config.clone();
         std::thread::spawn(move || {
-            crate::sdl_joystick::sdl_thread(yoke_tx, shutdown_tx, mapping);
+            sdl_joystick::sdl_thread(yoke_tx, shutdown_tx, config);
         });
     }
 
-    crate::websocket::ws_client_start(shutdown_tx.clone(), yoke_rx, mapping).await;
+    websocket::ws_client_start(shutdown_tx.clone(), yoke_rx, config).await;
 
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {
