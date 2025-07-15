@@ -44,6 +44,7 @@ pub async fn ws_client_start(
             let mut axes_values = BTreeMap::<BlimpSteeringAxis, f32>::new();
             let mut flight_mode = FlightMode::Manual;
             let mut motors_toggles = [true; 4];
+            let mut motors_reverse = [false; 4];
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
@@ -86,6 +87,11 @@ pub async fn ws_client_start(
                                                 motors_toggles[motor as usize] = !motors_toggles[motor as usize];
                                             }
                                         }
+                                        BlimpButtonFunction::MotorReverse(motor) => {
+                                            if state {
+                                                motors_reverse[motor as usize] = !motors_reverse[motor as usize];
+                                            }
+                                        }
                                     }
                                 }
                             },
@@ -102,18 +108,28 @@ pub async fn ws_client_start(
                                     throttle_main: *axes_values
                                         .get(&BlimpSteeringAxis::Throttle)
                                         .unwrap_or(&0.0),
+                                    throttle_split: [0, 1, 2, 3]
+                                        .map(|i| *axes_values
+                                            .get(&BlimpSteeringAxis::ThrottleSplit(i))
+                                            .unwrap_or(&0.0)),
+                                    sideways: *axes_values
+                                        .get(&BlimpSteeringAxis::Sideways)
+                                        .unwrap_or(&0.0),
                                     elevation: *axes_values
                                         .get(&BlimpSteeringAxis::Elevation)
+                                        .unwrap_or(&0.0),
+                                    pitch: *axes_values
+                                        .get(&BlimpSteeringAxis::Pitch)
+                                        .unwrap_or(&0.0),
+                                    roll: *axes_values
+                                        .get(&BlimpSteeringAxis::Roll)
                                         .unwrap_or(&0.0),
                                     yaw: *axes_values
                                         .get(&BlimpSteeringAxis::Yaw)
                                         .unwrap_or(&0.0),
-                                    throttle_split: [0.0; 4],
-                                    sideways: 0.0,
-                                    pitch: 0.0,
-                                    roll: 0.0,
                                     desired_flight_mode: flight_mode.clone(),
                                     motors_toggles: motors_toggles.clone(),
+                                    motors_reverse: motors_reverse.clone(),
                                 },
                             ))
                             .await

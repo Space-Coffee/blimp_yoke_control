@@ -6,7 +6,11 @@ use serde_json;
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize, serde::Serialize)]
 pub enum BlimpSteeringAxis {
     Throttle,
+    ThrottleSplit(i16),
+    Sideways,
     Elevation,
+    Pitch,
+    Roll,
     Yaw,
 }
 
@@ -21,6 +25,7 @@ pub struct AxesMappingEntry {
 pub enum BlimpButtonFunction {
     FlightModeCycle,
     MotorToggle(i16),
+    MotorReverse(i16),
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
