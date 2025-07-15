@@ -45,6 +45,7 @@ pub async fn ws_client_start(
             let mut flight_mode = FlightMode::Manual;
             let mut motors_toggles = [true; 4];
             let mut motors_reverse = [false; 4];
+            let mut nav_lights = false;
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
@@ -92,6 +93,11 @@ pub async fn ws_client_start(
                                                 motors_reverse[motor as usize] = !motors_reverse[motor as usize];
                                             }
                                         }
+                                        BlimpButtonFunction::NavLightsToggle => {
+                                            if state {
+                                                nav_lights = !nav_lights;
+                                            }
+                                        }
                                     }
                                 }
                             },
@@ -130,6 +136,7 @@ pub async fn ws_client_start(
                                     desired_flight_mode: flight_mode.clone(),
                                     motors_toggles: motors_toggles.clone(),
                                     motors_reverse: motors_reverse.clone(),
+                                    nav_lights
                                 },
                             ))
                             .await
