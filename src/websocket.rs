@@ -108,49 +108,51 @@ pub async fn ws_client_start(
                             }
                         }
 
-                        elevation_integral += *axes_values
-                            .get(&BlimpSteeringAxis::Elevation)
-                            .unwrap_or(&0.0)
-                            * 0.5 * ((std::time::Instant::now() - last_control_time).as_micros() as f32 / 1000000.0);
-                        elevation_integral = elevation_integral.clamp(-1.0, 1.0);
-                        let elevation = elevation_integral + *axes_values
-                            .get(&BlimpSteeringAxis::ElevationTrim)
-                            .unwrap_or(&0.0);
-                        last_control_time = std::time::Instant::now();
+                        if (std::time::Instant::now() - last_control_time).as_millis() >= 100 {
+                            elevation_integral += *axes_values
+                                .get(&BlimpSteeringAxis::Elevation)
+                                .unwrap_or(&0.0)
+                                * 0.5 * ((std::time::Instant::now() - last_control_time).as_micros() as f32 / 1000000.0);
+                            elevation_integral = elevation_integral.clamp(-1.0, 1.0);
+                            let elevation = elevation_integral + *axes_values
+                                .get(&BlimpSteeringAxis::ElevationTrim)
+                                .unwrap_or(&0.0);
+                            last_control_time = std::time::Instant::now();
 
-                        ws_client
-                            .lock()
-                            .await
-                            .send(MessageV2G::Controls(
-                                Controls {
-                                    throttle_main: *axes_values
-                                        .get(&BlimpSteeringAxis::Throttle)
-                                        .unwrap_or(&0.0),
-                                    throttle_split: [0, 1, 2, 3]
-                                        .map(|i| *axes_values
-                                            .get(&BlimpSteeringAxis::ThrottleSplit(i))
-                                            .unwrap_or(&0.0)),
-                                    sideways: *axes_values
-                                        .get(&BlimpSteeringAxis::Sideways)
-                                        .unwrap_or(&0.0),
-                                    elevation,
-                                    pitch: *axes_values
-                                        .get(&BlimpSteeringAxis::Pitch)
-                                        .unwrap_or(&0.0),
-                                    roll: *axes_values
-                                        .get(&BlimpSteeringAxis::Roll)
-                                        .unwrap_or(&0.0),
-                                    yaw: *axes_values
-                                        .get(&BlimpSteeringAxis::Yaw)
-                                        .unwrap_or(&0.0),
-                                    desired_flight_mode: flight_mode.clone(),
-                                    motors_toggles: motors_toggles.clone(),
-                                    motors_reverse: motors_reverse.clone(),
-                                    nav_lights
-                                },
-                            ))
-                            .await
-                            .unwrap();
+                            ws_client
+                                .lock()
+                                .await
+                                .send(MessageV2G::Controls(
+                                    Controls {
+                                        throttle_main: *axes_values
+                                            .get(&BlimpSteeringAxis::Throttle)
+                                            .unwrap_or(&0.0),
+                                        throttle_split: [0, 1, 2, 3]
+                                            .map(|i| *axes_values
+                                                .get(&BlimpSteeringAxis::ThrottleSplit(i))
+                                                .unwrap_or(&0.0)),
+                                        sideways: *axes_values
+                                            .get(&BlimpSteeringAxis::Sideways)
+                                            .unwrap_or(&0.0),
+                                        elevation,
+                                        pitch: *axes_values
+                                            .get(&BlimpSteeringAxis::Pitch)
+                                            .unwrap_or(&0.0),
+                                        roll: *axes_values
+                                            .get(&BlimpSteeringAxis::Roll)
+                                            .unwrap_or(&0.0),
+                                        yaw: *axes_values
+                                            .get(&BlimpSteeringAxis::Yaw)
+                                            .unwrap_or(&0.0),
+                                        desired_flight_mode: flight_mode.clone(),
+                                        motors_toggles: motors_toggles.clone(),
+                                        motors_reverse: motors_reverse.clone(),
+                                        nav_lights
+                                    },
+                                ))
+                                .await
+                                .unwrap();
+                        }
                     }
                     _ = shutdown_rx.recv() => {
                         break;
