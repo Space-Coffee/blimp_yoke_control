@@ -9,6 +9,7 @@ pub enum BlimpSteeringAxis {
     ThrottleSplit(i16),
     Sideways,
     Elevation,
+    ElevationTrim,
     Pitch,
     Roll,
     Yaw,

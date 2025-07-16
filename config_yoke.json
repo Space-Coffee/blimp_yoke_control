@@ -5,7 +5,7 @@
       "name_regex": "Turtle Beach VelocityOne Flight",
       "axes": {
         "0": {
-          "axis": "Yaw",
+          "axis": "Roll",
           "keypoints": [
             [
               -32768,
@@ -45,6 +45,27 @@
               -1.0
             ]
           ]
+        },
+        "2": {
+          "axis": "Yaw",
+          "keypoints": [
+            [
+              -32768,
+              1.0
+            ],
+            [
+              -300,
+              0.0
+            ],
+            [
+              300,
+              0.0
+            ],
+            [
+              32767,
+              -1.0
+            ]
+          ]
         }
       },
       "buttons": {}
@@ -57,7 +78,88 @@
           "keypoints": [
             [
               -32768,
+              0.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        },
+        "1": {
+          "axis": "Sideways",
+          "keypoints": [
+            [
+              -32768,
               -1.0
+            ],
+            [
+              -2000,
+              0.0
+            ],
+            [
+              -2000,
+              0.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        },
+        "3": {
+          "axis": {
+            "ThrottleSplit": 0
+          },
+          "keypoints": [
+            [
+              -32768,
+              0.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        },
+        "4": {
+          "axis": {
+            "ThrottleSplit": 1
+          },
+          "keypoints": [
+            [
+              -32768,
+              0.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        },
+        "5": {
+          "axis": {
+            "ThrottleSplit": 2
+          },
+          "keypoints": [
+            [
+              -32768,
+              0.0
+            ],
+            [
+              32767,
+              1.0
+            ]
+          ]
+        },
+        "6": {
+          "axis": {
+            "ThrottleSplit": 3
+          },
+          "keypoints": [
+            [
+              -32768,
+              0.0
             ],
             [
               32767,
@@ -69,6 +171,9 @@
       "buttons": {
         "0": {
           "function": "FlightModeCycle"
+        },
+        "1": {
+          "function": "NavLightsToggle"
         },
         "2": {
           "function": {
@@ -88,6 +193,26 @@
         "5": {
           "function": {
             "MotorToggle": 3
+          }
+        },
+        "6": {
+          "function": {
+            "MotorReverse": 0
+          }
+        },
+        "7": {
+          "function": {
+            "MotorReverse": 1
+          }
+        },
+        "8": {
+          "function": {
+            "MotorReverse": 2
+          }
+        },
+        "9": {
+          "function": {
+            "MotorReverse": 3
           }
         }
       }

@@ -42,10 +42,12 @@ pub async fn ws_client_start(
         let ws_client = ws_client.clone();
         tokio::spawn(async move {
             let mut axes_values = BTreeMap::<BlimpSteeringAxis, f32>::new();
+            let mut elevation_integral: f32 = 0.0;
             let mut flight_mode = FlightMode::Manual;
             let mut motors_toggles = [true; 4];
             let mut motors_reverse = [false; 4];
             let mut nav_lights = false;
+            let mut last_control_time = std::time::Instant::now();
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
@@ -106,6 +108,16 @@ pub async fn ws_client_start(
                             }
                         }
 
+                        elevation_integral += *axes_values
+                            .get(&BlimpSteeringAxis::Elevation)
+                            .unwrap_or(&0.0)
+                            * 0.5 * ((std::time::Instant::now() - last_control_time).as_micros() as f32 / 1000000.0);
+                        elevation_integral = elevation_integral.clamp(-1.0, 1.0);
+                        let elevation = elevation_integral + *axes_values
+                            .get(&BlimpSteeringAxis::ElevationTrim)
+                            .unwrap_or(&0.0);
+                        last_control_time = std::time::Instant::now();
+
                         ws_client
                             .lock()
                             .await
@@ -121,9 +133,7 @@ pub async fn ws_client_start(
                                     sideways: *axes_values
                                         .get(&BlimpSteeringAxis::Sideways)
                                         .unwrap_or(&0.0),
-                                    elevation: *axes_values
-                                        .get(&BlimpSteeringAxis::Elevation)
-                                        .unwrap_or(&0.0),
+                                    elevation,
                                     pitch: *axes_values
                                         .get(&BlimpSteeringAxis::Pitch)
                                         .unwrap_or(&0.0),
