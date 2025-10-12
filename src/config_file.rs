@@ -6,7 +6,12 @@ use serde_json;
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize, serde::Serialize)]
 pub enum BlimpSteeringAxis {
     Throttle,
+    ThrottleSplit(i16),
+    Sideways,
     Elevation,
+    ElevationTrim,
+    Pitch,
+    Roll,
     Yaw,
 }
 
@@ -18,22 +23,16 @@ pub struct AxesMappingEntry {
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
-pub enum ButtonStyle {
-    OnlyPress,
-    OnlyRelease,
-    PressAndRelease,
-    Repeat(f32),
-}
-
-#[derive(serde::Deserialize, serde::Serialize)]
 pub enum BlimpButtonFunction {
     FlightModeCycle,
+    MotorToggle(i16),
+    MotorReverse(i16),
+    NavLightsToggle,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct ButtonMappingEntry {
     pub function: BlimpButtonFunction,
-    pub style: ButtonStyle,
 }
 
 // This describes one virtual joystick or yoke.

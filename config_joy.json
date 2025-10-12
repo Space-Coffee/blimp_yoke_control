@@ -46,8 +46,7 @@
       },
       "buttons": {
         "0": {
-          "function": "FlightModeCycle",
-          "style": "PressAndRelease"
+          "function": "FlightModeCycle"
         }
       }
     }

@@ -42,7 +42,12 @@ pub async fn ws_client_start(
         let ws_client = ws_client.clone();
         tokio::spawn(async move {
             let mut axes_values = BTreeMap::<BlimpSteeringAxis, f32>::new();
+            let mut elevation_integral: f32 = 0.0;
             let mut flight_mode = FlightMode::Manual;
+            let mut motors_toggles = [true; 4];
+            let mut motors_reverse = [false; 4];
+            let mut nav_lights = false;
+            let mut last_control_time = std::time::Instant::now();
             loop {
                 tokio::select! {
                     yoke_ev = yoke_rx.recv() => {
@@ -80,6 +85,21 @@ pub async fn ws_client_start(
                                                 }
                                             }
                                         }
+                                        BlimpButtonFunction::MotorToggle(motor) => {
+                                            if state {
+                                                motors_toggles[motor as usize] = !motors_toggles[motor as usize];
+                                            }
+                                        }
+                                        BlimpButtonFunction::MotorReverse(motor) => {
+                                            if state {
+                                                motors_reverse[motor as usize] = !motors_reverse[motor as usize];
+                                            }
+                                        }
+                                        BlimpButtonFunction::NavLightsToggle => {
+                                            if state {
+                                                nav_lights = !nav_lights;
+                                            }
+                                        }
                                     }
                                 }
                             },
@@ -87,6 +107,16 @@ pub async fn ws_client_start(
                                 break;
                             }
                         }
+
+                        elevation_integral += *axes_values
+                            .get(&BlimpSteeringAxis::Elevation)
+                            .unwrap_or(&0.0)
+                            * 0.5 * ((std::time::Instant::now() - last_control_time).as_micros() as f32 / 1000000.0);
+                        elevation_integral = elevation_integral.clamp(-1.0, 1.0);
+                        let elevation = elevation_integral + *axes_values
+                            .get(&BlimpSteeringAxis::ElevationTrim)
+                            .unwrap_or(&0.0);
+                        last_control_time = std::time::Instant::now();
 
                         ws_client
                             .lock()
@@ -96,17 +126,27 @@ pub async fn ws_client_start(
                                     throttle_main: *axes_values
                                         .get(&BlimpSteeringAxis::Throttle)
                                         .unwrap_or(&0.0),
-                                    elevation: *axes_values
-                                        .get(&BlimpSteeringAxis::Elevation)
+                                    throttle_split: [0, 1, 2, 3]
+                                        .map(|i| *axes_values
+                                            .get(&BlimpSteeringAxis::ThrottleSplit(i))
+                                            .unwrap_or(&0.0)),
+                                    sideways: *axes_values
+                                        .get(&BlimpSteeringAxis::Sideways)
+                                        .unwrap_or(&0.0),
+                                    elevation,
+                                    pitch: *axes_values
+                                        .get(&BlimpSteeringAxis::Pitch)
+                                        .unwrap_or(&0.0),
+                                    roll: *axes_values
+                                        .get(&BlimpSteeringAxis::Roll)
                                         .unwrap_or(&0.0),
                                     yaw: *axes_values
                                         .get(&BlimpSteeringAxis::Yaw)
                                         .unwrap_or(&0.0),
-                                    throttle_split: [0.0; 4],
-                                    sideways: 0.0,
-                                    pitch: 0.0,
-                                    roll: 0.0,
                                     desired_flight_mode: flight_mode.clone(),
+                                    motors_toggles: motors_toggles.clone(),
+                                    motors_reverse: motors_reverse.clone(),
+                                    nav_lights
                                 },
                             ))
                             .await
