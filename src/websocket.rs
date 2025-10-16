@@ -11,6 +11,8 @@ use blimp_ground_ws_interface::{
     BlimpGroundWebsocketClient, Controls, FlightMode, MessageV2G, VizInterest,
 };
 
+const ELEVATION_CUMULATIVE: bool = false;
+
 pub async fn ws_client_start(
     shutdown_tx: broadcast::Sender<()>,
     mut yoke_rx: mpsc::Receiver<YokeEvent>,
@@ -59,17 +61,26 @@ pub async fn ws_client_start(
                 nav_lights: &mut bool,
                 last_control_time: &mut std::time::Instant,
             ) {
-                *elevation_integral += *axes_values
-                    .get(&BlimpSteeringAxis::Elevation)
-                    .unwrap_or(&0.0)
-                    * 0.5
-                    * ((std::time::Instant::now() - *last_control_time).as_micros() as f32
-                        / 1000000.0);
-                *elevation_integral = elevation_integral.clamp(-1.0, 1.0);
-                let elevation = *elevation_integral
-                    + *axes_values
-                        .get(&BlimpSteeringAxis::ElevationTrim)
-                        .unwrap_or(&0.0);
+                let elevation = if ELEVATION_CUMULATIVE {
+                    *elevation_integral += *axes_values
+                        .get(&BlimpSteeringAxis::Elevation)
+                        .unwrap_or(&0.0)
+                        * 0.5
+                        * ((std::time::Instant::now() - *last_control_time).as_micros() as f32
+                            / 1000000.0);
+                    *elevation_integral = elevation_integral.clamp(-1.0, 1.0);
+                    *elevation_integral
+                        + *axes_values
+                            .get(&BlimpSteeringAxis::ElevationTrim)
+                            .unwrap_or(&0.0)
+                } else {
+                    *axes_values
+                        .get(&BlimpSteeringAxis::Elevation)
+                        .unwrap_or(&0.0)
+                        + *axes_values
+                            .get(&BlimpSteeringAxis::ElevationTrim)
+                            .unwrap_or(&0.0)
+                };
                 *last_control_time = std::time::Instant::now();
 
                 ws_client
