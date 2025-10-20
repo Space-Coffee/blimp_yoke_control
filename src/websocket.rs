@@ -163,6 +163,18 @@ pub async fn ws_client_start(
                                                 nav_lights = !nav_lights;
                                             }
                                         }
+                                        BlimpButtonFunction::CameraCycle => {
+                                            if state {
+                                                // println!("Before cycling camera");
+                                                ws_client
+                                                    .lock()
+                                                    .await
+                                                    .send(MessageV2G::CycleCamera)
+                                                    .await
+                                                    .unwrap();
+                                                // println!("After cycling camera");
+                                            }
+                                        }
                                     }
                                 }
                             },

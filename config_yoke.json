@@ -1,5 +1,5 @@
 {
-  "ws_addr": "ws://127.0.0.1:8765",
+  "ws_addr": "ws://localhost:8765",
   "joys": [
     {
       "name_regex": "Turtle Beach VelocityOne Flight",

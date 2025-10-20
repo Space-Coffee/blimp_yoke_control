@@ -28,6 +28,7 @@ pub enum BlimpButtonFunction {
     MotorToggle(i16),
     MotorReverse(i16),
     NavLightsToggle,
+    CameraCycle,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
