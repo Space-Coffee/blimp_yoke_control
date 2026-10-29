@@ -80,6 +80,7 @@ checksum = "1b8e56985ec62d17e9c1001dc89c88ecd7dc08e47eba5ec7c29c7b5eeecde967"
 [[package]]
 name = "blimp_ground_ws_interface"
 version = "1.0.0"
+source = "git+https://github.com/Space-Coffee/blimp_ground_ws_interface.git?branch=develop#b7d477f8ea7ea40907acbeeabc41098024547ea9"
 dependencies = [
  "blimp_onboard_software",
  "futures-util",
@@ -95,6 +96,7 @@ dependencies = [
 [[package]]
 name = "blimp_onboard_software"
 version = "0.2.0"
+source = "git+https://github.com/Space-Coffee/blimp_onboard_software.git?branch=develop#f3e7c0337fa4d2504e82ad4788260183c4a1b2e2"
 dependencies = [
  "nalgebra",
  "num-traits",
@@ -1204,11 +1206,3 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[patch.unused]]
-name = "blimp_comm"
-version = "0.2.0"
-
-[[patch.unused]]
-name = "physsim"
-version = "0.1.0"
