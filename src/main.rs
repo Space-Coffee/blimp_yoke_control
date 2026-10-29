@@ -30,7 +30,7 @@ async fn main() -> tokio::io::Result<()> {
 
     let (yoke_tx, yoke_rx) = tokio::sync::mpsc::channel::<YokeEvent>(128);
 
-    let config = Arc::new(read_config().await.unwrap());
+    let config = Arc::new(read_config().await.expect("Failed to read config file"));
 
     {
         let shutdown_tx = shutdown_tx.clone();
@@ -44,10 +44,14 @@ async fn main() -> tokio::io::Result<()> {
 
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {
-            println!("Shutting down...");
+            println!("Ctrl-C received");
+            println!("[main] !!! SHUTTING DOWN !!!");
             shutdown_tx.send(()).unwrap_or(0);
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         }
-        _ = shutdown_rx.recv() => {}
+        _ = shutdown_rx.recv() => {
+            println!("[main] !!! SHUTTING DOWN !!!");
+        }
     };
 
     Ok(())

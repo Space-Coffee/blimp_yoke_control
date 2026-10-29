@@ -27,7 +27,7 @@ pub async fn ws_client_start(
         .expect("Failed to connect to the WS server");
     println!("Opened WebSocket connection");
 
-    ws_client
+    match ws_client
         .send(MessageV2G::DeclareInterest(VizInterest {
             motors: true,
             servos: false,
@@ -35,7 +35,13 @@ pub async fn ws_client_start(
             state: false,
         }))
         .await
-        .unwrap();
+    {
+        Ok(_) => {}
+        Err(_) => {
+            println!("Failed to send interest declaration");
+            _ = shutdown_tx.send(());
+        }
+    }
 
     let ws_client = Arc::new(TMutex::new(ws_client));
 
@@ -53,6 +59,7 @@ pub async fn ws_client_start(
 
             async fn send_controls(
                 ws_client: Arc<TMutex<BlimpGroundWebsocketClient>>,
+                shutdown_tx: broadcast::Sender<()>,
                 axes_values: &mut BTreeMap<BlimpSteeringAxis, f32>,
                 elevation_integral: &mut f32,
                 flight_mode: &mut FlightMode,
@@ -83,7 +90,7 @@ pub async fn ws_client_start(
                 };
                 *last_control_time = std::time::Instant::now();
 
-                ws_client
+                if let Err(_) = ws_client
                     .lock()
                     .await
                     .send(MessageV2G::Controls(Controls {
@@ -108,7 +115,10 @@ pub async fn ws_client_start(
                         nav_lights: *nav_lights,
                     }))
                     .await
-                    .unwrap();
+                {
+                    println!("Couldn't send data through WebSocket");
+                    _ = shutdown_tx.send(());
+                }
             }
 
             loop {
@@ -186,6 +196,7 @@ pub async fn ws_client_start(
                         if (std::time::Instant::now() - last_control_time).as_millis() >= 100 {
                             send_controls(
                                 ws_client.clone(),
+                                shutdown_tx.clone(),
                                 &mut axes_values,
                                 &mut elevation_integral,
                                 &mut flight_mode,
@@ -201,6 +212,7 @@ pub async fn ws_client_start(
                         if (std::time::Instant::now() - last_control_time).as_millis() >= 100 {
                             send_controls(
                                 ws_client.clone(),
+                                shutdown_tx.clone(),
                                 &mut axes_values,
                                 &mut elevation_integral,
                                 &mut flight_mode,
@@ -212,6 +224,7 @@ pub async fn ws_client_start(
                         }
                     }
                     _ = shutdown_rx.recv() => {
+                        println!("[websocket] !!! SHUTTING DOWN  !!!");
                         break;
                     }
                 }

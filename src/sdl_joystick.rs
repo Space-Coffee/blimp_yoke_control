@@ -76,6 +76,7 @@ pub fn sdl_thread(
     'ev_loop: loop {
         match shutdown_rx.try_recv() {
             Ok(_) | Err(tokio::sync::broadcast::error::TryRecvError::Closed) => {
+                println!("[sdl_joystick] !!! SHUTTING DOWN !!!");
                 break;
             }
             _ => {}
