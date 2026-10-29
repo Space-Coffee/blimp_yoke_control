@@ -20,22 +20,37 @@ pub fn sdl_thread(
         .joystick()
         .expect("Couldn't initialize SDL2 joystick subsystem");
 
-    let joys_count = joystick_subsys.num_joysticks().unwrap();
+    let joys_count = joystick_subsys
+        .num_joysticks()
+        .expect("Failed to get joysticks count");
     println!("Joysticks count: {}", joys_count);
     for i in 0..joys_count {
-        println!("{}: \"{}\"", i, joystick_subsys.name_for_index(i).unwrap());
+        println!(
+            "{}: \"{}\"",
+            i,
+            joystick_subsys
+                .name_for_index(i)
+                .expect(&format!("Failed to get the name of joystick #{}", i))
+        );
     }
 
     let mut joys_instances = Vec::<sdl2::joystick::Joystick>::new();
     let mut used_joys_ids_mappings = BTreeMap::<u32, u32>::new();
     for (joy_sym_id, joy) in config.joys.iter().enumerate() {
-        let name_regex = regex::Regex::new(&joy.name_regex).unwrap();
+        let name_regex = regex::Regex::new(&joy.name_regex).expect(&format!(
+            "Failed to parse regex for joystick name: {}",
+            &joy.name_regex
+        ));
         let mut joystick_id: Option<u32> = None;
         for i in 0..joys_count {
             if used_joys_ids_mappings.contains_key(&i) {
                 continue;
             }
-            if name_regex.is_match(&joystick_subsys.name_for_index(i).unwrap()) {
+            if name_regex.is_match(
+                &joystick_subsys
+                    .name_for_index(i)
+                    .expect(&format!("Failed to get the name of joystick #{}", i)),
+            ) {
                 used_joys_ids_mappings.insert(i, joy_sym_id as u32);
                 joystick_id = Some(i);
                 break;
@@ -45,8 +60,9 @@ pub fn sdl_thread(
             let joystick = match joystick_subsys.open(joystick_id) {
                 Ok(js) => js,
                 Err(_err) => {
-                    shutdown_tx.send(()).unwrap();
-                    panic!("Couldn't open joystick with id {joystick_id}");
+                    _ = shutdown_tx.send(());
+                    println!("Couldn't open joystick with id {joystick_id}");
+                    return;
                 }
             };
             joys_instances.push(joystick);
@@ -82,15 +98,19 @@ pub fn sdl_thread(
                     axis_idx,
                     value,
                 } => {
-                    yoke_tx
-                        .blocking_send(YokeEvent::AxisMotion {
-                            joy_id: *used_joys_ids_mappings
-                                .get(&which)
-                                .expect("Received event from unknown joystick"),
-                            axis: axis_idx,
-                            value,
-                        })
-                        .unwrap();
+                    match yoke_tx.blocking_send(YokeEvent::AxisMotion {
+                        joy_id: *used_joys_ids_mappings
+                            .get(&which)
+                            .expect("Received event from unknown joystick"),
+                        axis: axis_idx,
+                        value,
+                    }) {
+                        Ok(()) => {}
+                        Err(_) => {
+                            println!("Couldn't send yoke motion data");
+                            _ = shutdown_tx.send(());
+                        }
+                    }
                 }
                 sdl2::event::Event::JoyButtonDown {
                     timestamp: _,
